@@ -6,46 +6,42 @@ const SYSTEM_PROMPT = `Você é o assistente virtual da Smart Cursos Unaí, espe
 Seu papel é:
 - Tirar dúvidas sobre o concurso de Paracatu 2026
 - Explicar conteúdos das disciplinas cobradas
-- Orientar sobre os cargos disponíveis: GCM, Enfermagem, PEB, Advogado, Radiologia, Psicologia, Educador de Creche e Fiscal de Saúde
-- Indicar que a Smart Cursos oferece apostilas completas e preparatórias para o concurso
+- Orientar sobre os cargos disponíveis
+- Informar que a Smart Cursos oferece apostilas completas para o concurso
 
 Seja sempre simpático, objetivo e use linguagem informal mas profissional.
 Responda em português do Brasil.
-Máximo de 300 caracteres por resposta (WhatsApp tem limite de atenção curto).
-Se a pergunta for fora do tema concurso, redirecione educadamente para o assunto.`;
+Máximo de 400 caracteres por resposta.
+Se a pergunta for fora do tema concurso, redirecione educadamente.`;
 
 async function responderPergunta(pergunta, historico = []) {
   try {
-    const messages = [];
+    const messages = [{ role: 'system', content: SYSTEM_PROMPT }];
 
-    // Adiciona histórico recente (últimas 4 trocas)
     const historicoRecente = historico.slice(-8);
     for (const msg of historicoRecente) {
       messages.push({ role: msg.role, content: msg.content });
     }
-
     messages.push({ role: 'user', content: pergunta });
 
     const response = await axios.post(
-      'https://api.anthropic.com/v1/messages',
+      'https://api.openai.com/v1/chat/completions',
       {
-        model: 'claude-3-haiku-20240307',
+        model: 'gpt-3.5-turbo',
         max_tokens: 300,
-        system: SYSTEM_PROMPT,
         messages
       },
       {
         headers: {
-          'x-api-key': config.anthropic.apiKey,
-          'anthropic-version': '2023-06-01',
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
           'Content-Type': 'application/json'
         }
       }
     );
 
-    return response.data.content[0].text;
+    return response.data.choices[0].message.content;
   } catch (err) {
-    console.error('[CLAUDE] Erro:', err.response?.data || err.message);
+    console.error('[OPENAI] Erro:', err.response?.data || err.message);
     return 'Desculpe, tive um problema técnico. Tente novamente em instantes! 😅';
   }
 }
